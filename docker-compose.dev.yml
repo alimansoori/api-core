@@ -1,0 +1,43 @@
+version: "3.8"
+services:
+  app:
+    build:
+      context: .
+      target: development
+    container_name: app_c
+    restart: on-failure
+    volumes:
+      - ./:/code
+      - /code/node_modules
+    command: pnpm dev
+    ports:
+      - ${API_BACKEND_PORT}:3002
+    env_file:
+      - ./.env
+    depends_on:
+      - mydb
+      - redis
+  mydb:
+    image: mysql
+    container_name: mydb
+    environment:
+      - MYSQL_DATABASE=${DATABASE_NAME}
+      - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}
+    restart: always
+    ports:
+      - ${MYSQL_PORT_1}:3306
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+  redis:
+    image: redis:alpine3.19
+    container_name: redis
+    restart: always
+    ports:
+      - ${REDIS_EXTERNAL_PORT_1}:6379
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+volumes:
+  mysql-data:
+  cache:
+    driver: local

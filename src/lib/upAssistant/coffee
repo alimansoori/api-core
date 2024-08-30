@@ -1,0 +1,11 @@
+[Coffee]
+title=Coffee
+description=coffee backend software firewall profile
+ports=2022,80,443,22/tcp
+
+
+
+[Coffee_services]
+title=Services
+description=Mysql database port
+ports=3306,9000,9001,8080,9100,10000:20000,9209,3100/tcp

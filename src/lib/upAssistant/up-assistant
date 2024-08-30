@@ -1,0 +1,406 @@
+#!/bin/bash
+fullPath=$(dirname "$(realpath "$0")")
+basePath=$(echo "$fullPath" | awk -F'/dist' '{print $1}')
+fileName="up-assistant"
+pidfile="$basePath/up.socket"
+
+if [ -f "$pidfile" ] && kill -0 `cat $pidfile` 2>/dev/null; then
+    echo still running
+    exit 1
+fi  
+echo $$ > $pidfile
+
+RC_NODE=14.21.3
+
+OS=$(lsb_release -cs)
+ARCHT=$(dpkg --print-architecture)
+
+DARK_YELLOW='\033[0;33m'  # Dark Yellow for a coffee-like color
+LIGHT_GRAY='\033[0;37m'  
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+MAGENTA='\033[1;35m'
+CYAN='\033[1;36m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
+
+is_user_root () { [ "$(id -u)" -eq 0 ]; }
+
+if is_user_root; then
+    rm /usr/bin/up
+    ln -s "$fullPath/$fileName" /usr/bin/up
+else
+    echo ""
+fi
+
+
+function syncServerFiles() {
+    declare -a arr=("sydney" "london" "california" "singapore")
+
+    for i in "${arr[@]}"
+    do
+    echo "Server $i"
+
+    rsync -rtuv -e 'ssh -p 2022' uniuser@$i:"$basePath/public/"  "$basePath/public/"
+    done
+
+}
+
+function updateOS() {
+    echo -ne "${BLUE}Update OS services${NC} ";
+    apt update && 
+    apt upgrade && 
+    apt full-upgrade && 
+    apt autoremove && 
+    apt autoclean && 
+    apt clean && 
+    echo -ne "${BLUE}Update npm pnpm${NC} ";
+    su uniuser -c "npm i -g npm pnpm" &&
+    su uniuser -c "cd $basePath && pnpm i && pnpm db:gen"
+}
+
+function aliMansooriHelp() {
+    clear
+    linux=$(uname -r)
+    linuxDistribution=$(lsb_release -d | cut -f2)
+    cpuModel=$(lscpu | grep "Model name:" | cut -d: -f2 | xargs)
+    cpuCores=$(lscpu | grep "^CPU(s):" | awk '{print $2}')
+    ramSize=$(free -m | awk '/^Mem:/{print $2}')
+    ramSizeGB=$((ramSize / 1024))  # Integer division, no fractional part
+
+    printf "${LIGHT_GRAY}"
+    cat << "EOF"
+                           ( (
+                            ) )
+EOF
+    printf "${DARK_YELLOW}"
+    cat << "EOF"
+                          ........
+                          |      |]
+                          \      /  
+                           `----'
+EOF
+    printf "${NC}   ----------------------coffee.xyz----------------------\n"
+    printf "   |  Linux kernel version: %s\n" "$linux"
+    printf "   |  Linux distribution:   %s\n" "$linuxDistribution"
+    printf "   |  CPU model name:       %s\n" "$cpuModel"
+    printf "   |  CPU total cores:      %s\n" "$cpuCores"
+    printf "   |  Memory size:          %d GB\n" "$ramSizeGB"
+    printf "   ------------------------------------------------------\n\n"
+
+    # Options Section
+    printf "${BLUE}   Options:\n\n${NC}"
+    printf "       s or status:               System Status\n"
+    printf "       l or logs:                 Check Logs\n"
+    printf "       up or update:              Update OS Dependencies\n"
+    printf "       r or rate:                 Reset rate limited users\n"
+    printf "       c or clear:                Clear Logs\n"
+    printf "       cert or certificates:      SSL Certificates\n\n"
+}
+
+
+
+
+function status() {
+    clear;
+    uptimeStatus=$(uptime | awk '{print $3, $4, $6, "user(s)"}')
+
+    vaultStatus=$(docker exec -it vault sh -c "vault status" | grep "Sealed")
+    if [[ $vaultStatus==*"false"* ]]; then
+        vaultStatus="Unsealed"
+    else
+        vaultStatus="Sealed"
+    fi
+
+    diskStatus=$(df -h | grep '^/dev/' | awk '{total+=$(NF-1)} END {print total"%"}')
+
+    ufwStatus=$(ufw status|grep Status)
+    if [[ $ufwStatus==*"active"* ]]; then
+        ufwStatus="Active"
+    else
+        ufwStatus="Inactive"
+    fi
+
+    arr=("${RED}Uptime:${NC} $uptimeStatus" "${YELLOW}Vault:${NC} $vaultStatus" "${GREEN}Disk:${NC} $diskStatus" "${CYAN}ufw:${NC} $ufwStatus")
+
+    echo -ne "┌"
+    for element in "${arr[@]}"; do
+        length=${#element}
+        for (( i=0; i<length-13; i++ )); do
+            echo -ne "─"
+        done
+        if [[ $element == "${arr[-1]}" ]]; then
+            echo -e "┐"
+        else
+            echo -ne "┬"
+        fi
+    done
+    echo -e "│  ${RED}Uptime:${NC} $uptimeStatus  │  ${YELLOW}Vault:${NC} $vaultStatus  │  ${GREEN}Disk:${NC} $diskStatus  │  ${CYAN}ufw:${NC} $ufwStatus  │"
+    echo -ne "└"
+    for element in "${arr[@]}"; do
+        length=${#element}
+        for (( i=0; i<length-13; i++ )); do
+            echo -ne "─"
+        done
+        if [[ $element == "${arr[-1]}" ]]; then
+            echo -e "┘"
+        else
+            echo -ne "┴"
+        fi
+    done
+    echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    # echo -ne "${RED}Uptime:${NC} "; uptime
+    # echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    # echo -ne "${YELLOW}Vault:${NC} "; docker exec -it vault sh -c "vault status" | grep "Sealed"
+    # echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    # echo -ne "${GREEN}Disk:${NC} "; df -h | grep '^/dev/' | awk '{print $(NF-1)}'
+    # echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    # echo -ne "${CYAN}ufw:${NC} "; ufw status
+    # echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    echo -ne "${BLUE}Nginx Config:${NC} "; nginx -t
+    echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    echo -e "${WHITE}Systemd Services:${NC}";
+    SYSTEMD_COLORS=1 systemctl status nginx redis-server mongod mysql docker | grep --color=never -e ● -e Active
+    echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    echo -ne "${MAGENTA}PM2 Status:${NC}\n";
+    su uniuser -c "pm2 l --sort id"
+
+    echo -ne "${MAGENTA}Docker Status:${NC}\n";
+    su uniuser -c "docker ps -a"
+}
+
+
+function statusForMonitoring() {
+    clear;
+    echo -ne "${YELLOW}Vault:${NC} "; docker exec -it vault sh -c "vault status" | grep "Sealed"
+    echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    echo -ne "${BLUE}Nginx Config:${NC} "; nginx -t
+    echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+
+    echo -e "${WHITE}Systemd Services:${NC}";
+    SYSTEMD_COLORS=1 systemctl status nginx redis-server mongod mysql docker | grep --color=never -e ● -e Active
+    echo -e "${NC}─────────────────────────────────────${NC}"; # Separator line
+}
+
+function ssl() {
+    printf "${GREEN}SSL Certification Setup\n${NC}"
+    printf "Is it a wild card domain? [y/n/Skip] "
+    read confirm
+
+    if [ "$confirm" = "y" ]
+    then
+        echo "Please enter the domain address:"
+        read domain
+        certbot certonly --server https://acme-v02.api.letsencrypt.org/directory --manual --preferred-challenges dns -d "$domain,*.$domain"
+    elif [ "$confirm" = "n" ]
+    then
+        echo "Please enter the domain address:"
+        read domain
+        certbot -d "$domain"
+    else
+        echo "Skipped"
+    fi
+}
+
+function createUniuserUser () {
+    printf "${GREEN}Creating Uniuser user\n${NC}"
+    adduser uniuser
+    usermod -aG uniuser
+
+    printf "${NC}Going to next step\n"
+}
+
+function installAppDependecies() {
+    printf "${GREEN}Installing app dependencies\n${NC}"
+    
+    apt install -y ccze zip unzip net-tools ncdu build-essential graphicsmagick tcl  pkg-config curl gnupg2 ca-certificates lsb-release ubuntu-keyring  python3 python3-pip ffmpeg apt-transport-https ca-certificates curl software-properties-common
+
+    #nvm
+    mkdir -p /opt/setup/nvm
+    cd /opt/setup/nvm
+    curl -o-  https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+    source ~/.bashrc
+    export NVM_DIR="$HOME/.nvm"
+    nvm install $RC_NODE
+    nvm install --lts
+    nvm alias default lts/*
+
+    #npm and update pm2 to latest
+    npm install -g npm pm2 pnpm
+
+    
+    #mongo
+    mkdir -p /opt/setup/mongodb
+    cd /opt/setup/mongodb
+    curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb-6.gpg
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+    apt update
+    apt install -y mongodb-org
+    systemctl enable --now mongod
+
+
+
+    #redis
+    sudo add-apt-repository ppa:redislabs/redis
+    sudo apt-get update
+    sudo apt-get install redis
+
+
+    #nginx
+    mkdir -p /opt/setup/nginx
+    cd /opt/setup/nginx
+
+    wget -O- https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg
+    echo deb [arch=$ARCHT signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/ubuntu `lsb_release -cs` nginx  >>  /etc/apt/sources.list.d/alimansoori71.list
+
+
+    #certbot
+    apt install -y certbot python3-certbot-nginx
+
+    #mysql
+    apt install -y mysql-server
+    systemctl enable --now mysql
+    systemctl status mysql
+
+
+    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password by 'MySQL__dsN__-ZZZ_2PD-Po60GiCYhha';"
+
+    sudo mysql_secure_installation
+
+    mysql -uroot -p -e "
+    CREATE USER 'uuniplatoo'@'localhost' IDENTIFIED WITH mysql_native_password BY 'MySQL__dsN__-ZZZ_2PD-Po60GiCYhha';
+    GRANT ALL PRIVILEGES ON *.* TO 'uuniplatoo'@'localhost' WITH GRANT OPTION;
+    CREATE USER 'uuniplatoo'@'%' IDENTIFIED BY 'JaANZZZ_2PD-Po60GiCYhha';
+    GRANT ALL PRIVILEGES ON *.* TO 'uuniplatoo'@'%' WITH GRANT OPTION;
+    FLUSH PRIVILEGES;";
+
+
+    #docker
+    mkdir -p /opt/setup/docker
+    cd /opt/setup/docker
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+    echo "deb [arch=$ARCHT] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" >>  /etc/apt/sources.list.d/alimansoori71.list
+
+    apt update
+    apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    systemctl enable --now docker
+    systemctl status docker
+    usermod -aG docker uniuser
+
+
+    #rc
+    useradd -M rocketchat && usermod -L rocketchat
+    chown -R rocketchat:rocketchat /opt/Rocket.Chat
+
+
+    #Update FFMPEG to 6 (from 4.4.2)
+    sudo add-apt-repository ppa:ubuntuhandbook1/ffmpeg6
+    sudo apt update
+    sudo apt install ffmpeg
+
+
+}
+
+
+function preparePipelines () {
+    printf "${GREEN}Preparing pipelines\n${NC}"
+    cd /opt && mkdir -p backend uniclient email-service unichat-build unistorage orchestration
+    chown uniuser:uniuser /opt/* -R
+}
+
+function checkLogs () {
+    {
+    echo "===== RTC-ERROR LOGS =====";
+    cat /home/uniuser/.pm2/logs/*-RTC-error.log;
+    echo ""; # Adds an empty line for spacing
+    echo "===== BACKEND-ERROR LOGS =====";
+    cat /home/uniuser/.pm2/logs/*-Backend-error.log;
+    echo "";
+    echo "===== MYSQL SLOW QUERY LOGS =====";
+    cat /var/log/mysql/mysql_slow_query.log*;
+    } | ccze -A | less -R
+
+}
+
+function clearLogs () {
+    su uniuser -c "pm2 flush && pm2 reset all"
+    echo "" > /var/log/mysql/mysql_slow_query.log*
+    rm /var/log/nginx/* -rf
+    echo "" > /var/log/mongodb/mongod.log
+    rm /var/log/btmp*
+    rm /var/log/*.gz
+    rm /var/log/*.0
+    rm /var/log/*.1
+    rm /var/log/*.2
+    rm /var/log/*.3
+    journalctl --vacuum-time=2d
+    apt remove
+    apt clean
+}
+
+function reloadRateLimit() {
+    redis-cli KEYS "*user*" | xargs redis-cli DEL
+}
+
+function certbotCertificates() {
+    certbot certificates
+}
+
+
+function installApp() {
+    updateOS
+    createUniuserUser
+    installAppDependecies
+    preparePipelines
+}
+
+# function updateUfwProfile () {
+#     cp ./coffee /etc/ufw/applications.d
+#     sudo ufw app update Coffee
+#     sudo ufw app update Coffee_services
+# }
+
+function addUfwProfile () {
+    cp "$basePath/dist/lib/upAssistant/coffee" /etc/ufw/applications.d
+    sudo ufw app update Coffee
+    sudo ufw app update Coffee_services
+    sudo ufw allow Coffee
+    sudo ufw allow Coffee_services
+}
+
+
+if [ "$1" == "update" ] ||  [ "$1" == "up" ]
+then updateOS
+elif [ "$1" == "status" ] ||  [ "$1" == "s" ]
+then status
+elif [ "$1" == "rate" ] ||  [ "$1" == "r" ]
+then reloadRateLimit
+elif [ "$1" == "status-monitoring" ] ||  [ "$1" == "sm" ]
+then statusForMonitoring
+elif [ "$1" == "logs" ] ||  [ "$1" == "l" ]
+then checkLogs
+elif [ "$1" == "ssl" ]
+then ssl
+elif [ "$1" == "sync" ]
+then syncServerFiles
+elif [ "$1" == "clear" ] ||  [ "$1" == "c" ]
+then clearLogs
+elif [ "$1" == "ufw-install-profile" ] ||  [ "$1" == "uip" ]
+then addUfwProfile
+elif [ "$1" == "cert" ] ||  [ "$1" == "certificates" ]
+then certbotCertificates
+# elif [ "$1" == "ufw-update-profile" ] || [ "$1" == "uup" ]
+# then updateUfwProfile
+else aliMansooriHelp
+fi

@@ -1,0 +1,97 @@
+export enum enum_email_templates {
+  // Meeting
+  meetingAllAttendeesVoted = 'meetingAllAttendeesVoted',
+  meetingPollStarted = 'meetingPollStarted',
+  meetingInvitedProposal = 'meetingInvitedProposal',
+  meetingVotedYourProposal = 'meetingVotedYourProposal',
+  meetingMissed = 'meetingMissed',
+  meetingUpdateAgendaItem = 'meetingUpdateAgendaItem',
+  meetingAddedNewAgenda = 'meetingAddedNewAgenda',
+  meetingMentionedAgenda = 'meetingMentionedAgenda',
+  meetingIsRequestingAccess = 'meetingIsRequestingAccess',
+  meetingCanceled = 'meetingCanceled',
+  meetingAttended = 'meetingAttended',
+  meetingPollCanceled = 'meetingPollCanceled',
+  meetingPollDeclinedByAttendee = 'meetingPollDeclinedByAttendee',
+  meetingPollDeclinedByAllAttendees = 'meetingPollDeclinedByAllAttendees',
+  meetingDeclinedByAttendee = 'meetingDeclinedByAttendee',
+  meetingDeclinedByAllAttendees = 'meetingDeclinedByAllAttendees',
+  meetingUpdated = 'meetingUpdated',
+  meetingPollUpdated = 'meetingPollUpdated',
+  meetingPollExpired = 'meetingPollExpired',
+  meetingInvited = 'meetingInvited',
+  meetingGrantedAccess = 'meetingGrantedAccess',
+  meetingTomorrow = 'meetingTomorrow',
+  meetingOnAirNow = 'meetingOnAirNow',
+  meetingConfirmed = 'meetingConfirmed',
+  meetingRecap = 'meetingRecap',
+  meetingStarting30Minutes = 'meetingStarting30Minutes',
+  meetingStartingNow = 'meetingStartingNow',
+  meetingSummary = 'meetingSummary',
+  // Meeting Recording
+  meetingRecordingShared = 'meetingRecordingShared',
+  // Room
+  roomInvited = 'roomInvited',
+  roomShared = 'roomShared',
+  roomKnocking = 'roomKnocking',
+  roomOnAirNow = 'roomOnAirNow',
+  roomIAddedNewAttendee = 'roomIAddedNewAttendee',
+  // Onboarding
+  onboardingLoginAccount = 'onboardingLoginAccount',
+  onboardingConfirmAccess = 'onboardingConfirmAccess',
+  onboardingResetPassword = 'onboardingResetPassword',
+  onboardingPasswordChanged = 'onboardingPasswordChanged',
+  onboardingPasswordRemoved = 'onboardingPasswordRemoved',
+  // Services-booking
+  serviceShared = 'serviceShared',
+  serviceHostChanged = 'serviceHostChanged',
+  bookingWasMade = 'bookingWasMade',
+  bookingInvited = 'bookingInvited',
+  bookingInviteAccepted = 'bookingInviteAccepted',
+  bookingInviteDeclined = 'bookingInviteDeclined',
+  bookingAutoConfirmed = 'bookingAutoConfirmed',
+  bookingRequestWasDeclined = 'bookingRequestWasDeclined',
+  bookingWasCanceled = 'bookingWasCanceled',
+  bookingServiceWasMade = 'bookingServiceWasMade',
+  bookingServiceWasAccepted = 'bookingServiceWasAccepted',
+  bookingAddedYouHost = 'bookingAddedYouHost',
+  bookingRescheduled = 'bookingRescheduled',
+  bookingSetYouAsOwner = 'bookingSetYouAsOwner',
+  // Project
+  projectShared = 'projectShared',
+  projectApprovedYourAccess = 'projectApprovedYourAccess',
+  projectRequestingAccess = 'projectRequestingAccess',
+  // Chat
+  chatShared = 'chatShared',
+  chatMentioned = 'chatMentioned',
+  chatApprovedAccess = 'chatApprovedAccess',
+  chatsRequestingAccess = 'chatsRequestingAccess',
+  chatMessageMissed = 'chatMessageMissed',
+  // Security
+  securityLoginAttempted = 'securityLoginAttempted',
+  securityAddedNewEmail = 'securityAddedNewEmail',
+  // Workspace
+  workspaceInvited = 'workspaceInvited',
+  workspaceRequestingToJoin = 'workspaceRequestingToJoin',
+  workspaceJoined = 'workspaceJoined',
+  workspaceLeft = 'workspaceLeft',
+  // workspaceInvited2DaysAgo = 'workspaceInvited2DaysAgo', // we don't have
+  workspaceConsiderGuests = 'workspaceConsiderGuests', // not any controller yet
+  // Note
+  pageShared = 'pageShared',
+  pageAccessApproved = 'pageAccessApproved',
+  pageAccessRequested = 'pageAccessRequested',
+  pageUpdated = 'pageUpdated',
+  // Technical email
+  errorTechnicalDepartment = 'errorTechnicalDepartment',
+  // Opportunity
+  opportunityUpdated = 'opportunityUpdated',
+  opportunityExpressed = 'opportunityExpressed',
+  opportunityAssigned = 'opportunityAssigned',
+  opportunityAccessApproved = 'opportunityAccessApproved',
+  opportunityAccessRequested = 'opportunityAccessRequested',
+  opportunityInvited = 'opportunityInvited',
+  customEmail = 'customEmail',
+}
+
+export type IEmailTemplates = keyof typeof enum_email_templates

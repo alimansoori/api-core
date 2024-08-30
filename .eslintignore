@@ -1,0 +1,11 @@
+node_modules
+bin
+build
+dist
+logs
+migrations
+orchestration
+prisma
+public
+chromadb
+db

@@ -1,0 +1,27 @@
+stages:
+  - Build
+  - Staging
+  - Localic
+  - ⚠️ Production
+  - Inspection
+  - Test
+  - Clean
+  - Dependency Scan
+
+Build:
+  stage: Build
+  tags:
+    - staging
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+      - unset CI
+      - pnpm i && pnpm db:gen && pnpm schema:gen && pnpm schema:env:gen && pnpm build
+      - tar -cf - dist prisma.seeder.ts loader.js prisma chromadb tsconfig.json package.json public | pigz > /opt/backup/backend-${CI_PIPELINE_ID}.tar.gz
+  allow_failure: true
+  only:
+    - main
+  when: manual
+
+

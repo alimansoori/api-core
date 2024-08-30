@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  chromadb:
+    image: chromadb/chroma:0.4.22
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    restart: always
+    volumes:
+      # Be aware that indexed data are located in "/chroma/chroma/"
+      # Default configuration for persist_directory in chromadb/config.py
+      # Read more about deployments: https://docs.trychroma.com/deployment
+      - chroma-data:/chroma/chroma
+
+    command: uvicorn chromadb.app:app --reload --workers 1 --host 0.0.0.0 --log-config chromadb/log_config.yml --timeout-keep-alive 30
+    environment:
+      - IS_PERSISTENT=TRUE
+      # *** NOTICE ***
+      # now langchain doesn't support chromaDB‌ Auth if so in future versions
+      # we should uncommt below auth environment lines and add mentioned commands to Dockerfile
+      # - CHROMA_SERVER_AUTH_PROVIDER=chromadb.auth.basic.BasicAuthServerProvider
+      # - CHROMA_SERVER_AUTH_CREDENTIALS_FILE=server.htpasswd
+      # - CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER=chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider
+
+      # Commands that should be added to Dockerfile if we want to implement chromaDB auth
+      # FROM chromadb/chroma:0.4.22
+      # RUN apt-get update && apt-get install -y apache2-utils
+      # RUN htpasswd -Bbn db_username db_password > server.htpasswd
+    ports:
+      - 8000:8000
+
+volumes:
+  chroma-data:
+    driver: local

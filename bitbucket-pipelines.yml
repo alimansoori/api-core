@@ -1,0 +1,215 @@
+#bitbucket-pipelines.yml
+image: node:lts
+
+pipelines:
+  branches:
+    staging:
+      - parallel:
+        - step:
+            name: Ready to build
+            script:
+              - echo "Now, you can build the project"
+              
+        - step:
+            name: Build
+            runs-on: self.hosted
+            trigger: manual
+            size: 4x
+            caches:
+              - node
+            script:
+              - unset CI
+              - git config -f .gitmodules submodule.src/shared-models.shallow true
+              - git submodule update --init
+              - npm i --no-audit --progress=false &> /dev/null
+              - npm run db:gen
+              - npm run schema:gen
+              - npm run schema:env:gen
+              - npm run build
+              - mkdir stage
+              - tar --exclude=./*.gz -czf stage/api-backend-test-${BITBUCKET_BUILD_NUMBER}.tar.gz .
+              - tar -czf stage/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz dist  src/lib/upAssistant  prisma.seeder.ts prisma tsconfig.json package.json public
+            artifacts:
+              - stage/**
+      - parallel:
+          - step:
+              name: 1️⃣ Deploy to Staging
+              deployment: Staging
+              runs-on: self.hosted
+              image: atlassian/default-image:latest
+              script:
+                - pipe: atlassian/scp-deploy:1.2.1
+                  variables:
+                    USER: $USER
+                    SERVER: $SERVER
+                    EXTRA_ARGS: ["-P", $PORT]
+                    REMOTE_PATH: "/opt/backend"
+                    LOCAL_PATH: "stage/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz"
+                - pipe: atlassian/ssh-run:0.4.1
+                  variables:
+                    SSH_USER: $USER
+                    SERVER: $SERVER
+                    PORT: $PORT
+                    COMMAND: >
+                      tar -xf /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz -C /opt/backend/ &&
+                      cd /opt/backend/ &&
+                      npm i --no-audit &&
+                      mkdir -p /opt/backend/versions &&
+                      mv /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz /opt/backend/versions &&
+                      find /opt/backend/versions/ -type f -mtime +5 -delete
+          - step:
+              name: 2️⃣ Deploy to Localic
+              deployment: Localic
+              runs-on: self.hosted
+              image: atlassian/default-image:latest
+              script:
+                - pipe: atlassian/scp-deploy:1.2.1
+                  variables: 
+                    USER: $USER
+                    SERVER: $SERVER
+                    EXTRA_ARGS: ["-P", $PORT]
+                    REMOTE_PATH: "/opt/backend"
+                    LOCAL_PATH: "stage/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz"
+                - pipe: atlassian/ssh-run:0.4.1
+                  variables:
+                    SSH_USER: $USER
+                    SERVER: $SERVER
+                    PORT: $PORT
+                    DEBUG: "true"
+                    COMMAND: >
+                      tar -xf /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz -C /opt/backend/ &&
+                      cd /opt/backend/ &&
+                      npm i --no-audit &&
+                      mkdir -p /opt/backend/versions &&
+                      mv /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz /opt/backend/versions &&
+                      find /opt/backend/versions/ -type f -mtime +5 -delete
+
+          - step:
+              name: Test
+              runs-on: self.hosted
+              deployment: Test
+              image: atlassian/default-image:latest
+              trigger: manual
+              script:
+                - pipe: atlassian/scp-deploy:1.2.1
+                  variables:
+                    USER: $USER
+                    SERVER: $SERVER
+                    EXTRA_ARGS: ["-P", $PORT]
+                    REMOTE_PATH: "/opt/tmp/backend"
+                    LOCAL_PATH: "stage/api-backend-test-${BITBUCKET_BUILD_NUMBER}.tar.gz"
+                - pipe: atlassian/ssh-run:0.4.1
+                  variables:
+                    SSH_USER: $USER
+                    SERVER: $SERVER
+                    PORT: $PORT
+                    DEBUG: "true"
+                    COMMAND: >
+                      mkdir -p /opt/tmp/backend/src/core/keys/jwt/ &&
+                      tar -xf /opt/tmp/backend/api-backend-test-${BITBUCKET_BUILD_NUMBER}.tar.gz -C /opt/tmp/backend/ &&
+                      cd /opt/tmp/backend/ &&
+                      ls -ltrh &&
+                      npm i --no-audit &&
+                      npx prisma generate &&
+                      npm run db:make &&
+                      npm run db:reset:test &&
+                      npm run test:reset 
+          - step:
+              name: Snyk test
+              runs-on: self.hosted
+              trigger: manual
+              script:
+                - npm i
+                - pipe: snyk/snyk-scan:0.5.2
+                  variables:
+                    SNYK_TOKEN: $SNYK_TOKEN
+                    LANGUAGE: "npm" # Required unless SNYK_TEST_JSON_INPUT is set
+                    CODE_INSIGHTS_RESULTS: "true" # Optional.
+                    MONITOR: "true" # Optional.
+                    TARGET_FILE: "package.json"
+                    PROJECT_FOLDER: "."
+                    DONT_BREAK_BUILD: "true" # Optional.
+
+          - step:
+              name: Deploy to 🇺🇸 Coffee California
+              deployment: DevCoffee
+              runs-on: self.hosted
+              image: atlassian/default-image:latest
+              trigger: manual
+              script:
+                - pipe: atlassian/scp-deploy:1.2.1
+                  variables:
+                    USER: $USER
+                    SERVER: $SERVER
+                    EXTRA_ARGS: ["-P", $PORT]
+                    REMOTE_PATH: "/opt/backend"
+                    LOCAL_PATH: "stage/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz"
+                - pipe: atlassian/ssh-run:0.4.1
+                  variables:
+                    SSH_USER: $USER
+                    SERVER: $SERVER
+                    PORT: $PORT
+                    DEBUG: "true"
+                    COMMAND: >
+                      tar -xf /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz -C /opt/backend/ &&
+                      cd /opt/backend/ &&
+                      npm i &&
+                      mkdir -p /opt/backend/versions &&
+                      mv /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz /opt/backend/versions &&
+                      find /opt/backend/versions/ -type f -mtime +5 -delete
+
+          - step:
+              name: Deploy to 🇦🇺 Coffee Sydney
+              trigger: manual
+              deployment: Sydney
+              runs-on: self.hosted
+              image: atlassian/default-image:latest
+              script:
+                - pipe: atlassian/scp-deploy:1.2.1
+                  variables: 
+                    USER: $USER
+                    SERVER: $SERVER
+                    EXTRA_ARGS: ["-P", $PORT]
+                    REMOTE_PATH: "/opt/backend"
+                    LOCAL_PATH: "stage/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz"
+                - pipe: atlassian/ssh-run:0.4.1
+                  variables:
+                    SSH_USER: $USER
+                    SERVER: $SERVER
+                    PORT: $PORT
+                    DEBUG: "true"
+                    COMMAND: >
+                      tar -xf /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz -C /opt/backend/ &&
+                      cd /opt/backend/ &&
+                      npm i --no-audit &&
+                      mkdir -p /opt/backend/versions &&
+                      mv /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz /opt/backend/versions &&
+                      find /opt/backend/versions/ -type f -mtime +5 -delete
+
+          - step:
+              name: Deploy to 🇬🇧 Coffee London
+              trigger: manual
+              runs-on: self.hosted
+              deployment: London
+              image: atlassian/default-image:latest
+              script:
+                - pipe: atlassian/scp-deploy:1.2.1
+                  variables: 
+                    USER: $USER
+                    SERVER: $SERVER
+                    EXTRA_ARGS: ["-P", $PORT]
+                    REMOTE_PATH: "/opt/backend"
+                    LOCAL_PATH: "stage/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz"
+                - pipe: atlassian/ssh-run:0.4.1
+                  variables:
+                    SSH_USER: $USER
+                    SERVER: $SERVER
+                    PORT: $PORT
+                    DEBUG: "true"
+                    COMMAND: >
+                      tar -xf /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz -C /opt/backend/ &&
+                      cd /opt/backend/ &&
+                      npm i --no-audit &&
+                      mkdir -p /opt/backend/versions &&
+                      mv /opt/backend/api-backend-${BITBUCKET_BUILD_NUMBER}.tar.gz /opt/backend/versions &&
+                      find /opt/backend/versions/ -type f -mtime +5 -delete

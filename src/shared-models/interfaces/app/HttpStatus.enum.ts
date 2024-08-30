@@ -1,0 +1,10 @@
+export enum HttpStatus {
+  'BAD_REQUEST' = 400,
+  'UNAUTHORIZED' = 401,
+  'PAYMENT_REQUIRED' = 402,
+  'FORBIDDEN' = 403,
+  'NOT_FOUND' = 404,
+  'TOO_MANY_REQUESTS' = 429,
+  'NOT_IMPLEMENTED' = 501,
+  'BAD_GATEWAY' = 502,
+}

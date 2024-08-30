@@ -1,0 +1,18 @@
+export const PLAN_CONFIG_KEY = {
+  module_max_count: 'module_max_count',
+  meeting_length_limit: 'meeting_length_limit',
+  meeting_recurrence: 'meeting_recurrence',
+  service_variation: 'service_variation',
+  ai_token_limit: 'ai_token_limit',
+  workspace_max_guest: 'workspace_max_guest',
+  workspace_max_member: 'workspace_max_member',
+  workspace_custom_role: 'workspace_custom_role',
+  storage_capacity: 'storage_capacity',
+  retention_duration: 'retention_duration',
+  embedding_access: 'embedding_access',
+  module_custom_url: 'module_custom_url',
+  white_label: 'white_label',
+  integration_access: 'integration_access',
+  api_access: 'api_access',
+  premium_support: 'premium_support',
+} as const

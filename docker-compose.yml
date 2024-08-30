@@ -1,0 +1,348 @@
+version: '3.8'
+
+networks:
+  uniclient-network:
+    name: uniclient-network
+    external: true
+
+services:
+  api-backend:
+    container_name: api-backend
+    build:
+      context: ./orchestration
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app/api-backend
+    tty: true
+    ports:
+      - '${API_BACKEND_PORT}:3002'
+      - '${API_BACKEND_SOCKET_PORT}:3050' # web Socket port
+    env_file:
+      - ./.env
+
+    networks:
+      uniclient-network:
+        ipv4_address: '${API_BACKEND_IP}'
+    depends_on:
+      - app-mysql
+      - app-redis
+    restart: always
+    command: ['sh', '-c', ' pnpm i && pnpm dev']
+  app-mysql:
+    container_name: '${MYSQL_HOST_1}'
+    restart: always
+    platform: linux/amd64
+    image: 'mysql:${MYSQL_DOCKER_IMAGE_VERSION}'
+    volumes:
+      - ../data_mysql:/var/lib/mysql
+      - ./orchestration/MySQL/mysql-keyring:/usr/local/mysql/mysql-keyring
+      - ./orchestration/MySQL/global/mysqld.my:/usr/sbin/mysqld.my # mysqd bin directory
+      - ./orchestration/MySQL/components/component_keyring_file.cnf:/usr/lib/mysql/plugin/component_keyring_file.cnf
+    environment:
+      - 'MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}'
+      - 'MYSQL_DATABASE=${DATABASE_NAME}'
+    ports:
+      - '${MYSQL_PORT_1}:3306'
+    cap_add:
+      - SYS_NICE
+    networks:
+      uniclient-network:
+        ipv4_address: '${MYSQL_IP_1}'
+    command: [
+        # "--default_table_encryption=ON",
+        # "--table-encryption-privilege-check=ON",
+        '--skip-replica-start=ON',
+        '--enforce-gtid-consistency=ON',
+        '--gtid-mode=ON',
+        '--replicate-same-server-id=0',
+        '--server_id=1234',
+        '--replica_parallel_workers=4',
+      ]
+  # app-mysql2:
+  #   container_name: "${MYSQL_HOST_1}"
+  #   restart: always
+  #   image: "mysql:${MYSQL_DOCKER_IMAGE_VERSION}"
+  #   volumes:
+  #     - app-mysql-data:/data/db
+  #     # - ./MySQL/mysql-keyring2:/usr/local/mysql/mysql-keyring
+  #     # - ./MySQL/global/mysqld.my:/usr/sbin/mysqld.my # mysqd bin directory
+  #     # - ./MySQL/components/component_keyring_file.cnf:/usr/lib/mysql/plugin/component_keyring_file.cnf
+  #   environment:
+  #     - "MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}"
+  #     - "MYSQL_DATABASE=${DATABASE_NAME}"
+  #   ports:
+  #     - "${MYSQL_PORT_2}:3306"
+  #   cap_add:
+  #     - SYS_NICE
+  #   networks:
+  #     uniclient-network:
+  #       ipv4_address: "${MYSQL_IP_2}"
+  #   command: [
+  #       # "--default_table_encryption=ON",
+  #       # "--table-encryption-privilege-check=ON",
+  #       "--skip-replica-start=ON",
+  #       "--enforce-gtid-consistency=ON",
+  #       "--gtid-mode=ON",
+  #       "--replicate-same-server-id=0",
+  #       "--server_id=1235",
+  #       "--replica_parallel_workers=4",
+  #       "--slave-skip-errors=1050,1826,1452,1032",
+  #     ]
+  app-redis:
+    image: 'redis:${REDIS_DOCKER_IMAGE_VERSION}'
+    restart: always
+    container_name: '${REDIS_HOST_1}'
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - '${REDIS_EXTERNAL_PORT_1}:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    networks:
+      uniclient-network:
+        ipv4_address: '${REDIS_IP_1}'
+
+  app-redis2:
+    image: 'redis:${REDIS_DOCKER_IMAGE_VERSION}'
+    restart: always
+    container_name: '${REDIS_HOST_2}'
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - '${REDIS_EXTERNAL_PORT_2}:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    networks:
+      uniclient-network:
+        ipv4_address: '${REDIS_IP_2}'
+  app-redis3:
+    image: 'redis:${REDIS_DOCKER_IMAGE_VERSION}'
+    restart: always
+    container_name: '${REDIS_HOST_3}'
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - '${REDIS_EXTERNAL_PORT_3}:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    networks:
+      uniclient-network:
+        ipv4_address: '${REDIS_IP_3}'
+  app-redis4:
+    image: 'redis:${REDIS_DOCKER_IMAGE_VERSION}'
+    restart: always
+    container_name: '${REDIS_HOST_4}'
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - '${REDIS_EXTERNAL_PORT_4}:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    networks:
+      uniclient-network:
+        ipv4_address: '${REDIS_IP_4}'
+  app-redis5:
+    image: 'redis:${REDIS_DOCKER_IMAGE_VERSION}'
+    restart: always
+    container_name: '${REDIS_HOST_5}'
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - '${REDIS_EXTERNAL_PORT_5}:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    networks:
+      uniclient-network:
+        ipv4_address: '${REDIS_IP_5}'
+  app-redis6:
+    image: 'redis:${REDIS_DOCKER_IMAGE_VERSION}'
+    restart: always
+    container_name: '${REDIS_HOST_6}'
+    volumes:
+      - ./orchestration/Redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - '${REDIS_EXTERNAL_PORT_6}:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    networks:
+      uniclient-network:
+        ipv4_address: '${REDIS_IP_6}'
+  app-minio:
+    image: minio/minio
+    restart: always
+    container_name: '${MINIO_HOST}'
+    depends_on:
+      - minio-kes
+    volumes:
+      - /mnt/minio:/data
+      - ./orchestration/Minio/env/minio:/etc/default/minio/minio
+      - ./orchestration/Minio/KES/certs:/etc/default/minio/certs
+    environment:
+      - 'MINIO_ROOT_USER=${MINIO_USERNAME}'
+      - 'MINIO_ROOT_PASSWORD=${MINIO_PASSWORD}'
+      - MINIO_CONFIG_ENV_FILE=/etc/default/minio/minio
+    ports:
+      - '${MINIO_CONSOLE_PORT}:9001'
+      - '${MINIO_PORT}:9000'
+    command: server --console-address ":9001" /data
+    networks:
+      uniclient-network:
+        ipv4_address: '${MINIO_IP}'
+    logging:
+      # for using loki docker driver plugin we should first install it on the server 
+      # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+      driver: loki 
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
+  app-minio2:
+    image: minio/minio
+    restart: always
+    container_name: 'app-minio2'
+    volumes:
+      - /mnt2/minio:/data
+    environment:
+      - 'MINIO_ROOT_USER=${MINIO_USERNAME}'
+      - 'MINIO_ROOT_PASSWORD=${MINIO_PASSWORD}'
+    ports:
+      - '9003:9001'
+      - '9002:9000'
+    command: server --console-address ":9001" /data
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.12
+    logging:
+      # for using loki docker driver plugin we should first install it on the server 
+      # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+      driver: loki 
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
+  valut:
+    image: vault
+    restart: always
+    container_name: vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "/vault/file"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h"}'
+      -  VAULT_ADDR=http://127.0.0.1:8200
+    ports:
+      - '8200:8200'
+    volumes:
+      - /vault:/vault
+      - ./orchestration/Vault:/etc/vault
+    command: server -config /etc/vault/vault1-main.hcl
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.13
+    logging:
+      # for using loki docker driver plugin we should first install it on the server 
+      # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+      driver: loki 
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
+  valut2:
+    image: vault
+    restart: always
+    container_name: vault2
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "/vault2/file"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h"}'
+      -  VAULT_ADDR=http://127.0.0.1:8200
+    ports:
+      - '8201:8200'
+    volumes:
+      - /vault2:/vault
+      - ./orchestration/Vault:/etc/vault
+    command: server -config /etc/vault/vault2-main.hcl
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.14
+    logging:
+      # for using loki docker driver plugin we should first install it on the server 
+      # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+      driver: loki 
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
+  minio-kes:
+    image: quay.io/minio/kes:v0.21.1
+    container_name: minio-kes
+    restart: always
+    volumes:
+      - ./orchestration/Minio/KES:/root/.kes
+    environment:
+    - KES_SERVER=https://0.0.0.0:7373
+    - KES_CLIENT_CERT=/root/.kes/certs/minio-kes.cert
+    - KES_CLIENT_KEY=/root/.kes/certs/minio-kes.key
+    ports:
+      - 7373:7373
+    cap_add:
+      - IPC_LOCK
+    command: server --config=/root/.kes/config/config.yaml --auth=off 
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.15
+    logging:
+      # for using loki docker driver plugin we should first install it on the server 
+      # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+      driver: loki 
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
+
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.16
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: always
+    ports:
+      - 3100:3100
+    volumes:
+      - ./config/loki-config.yaml:/etc/config/loki-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.17
+
+  promtail:
+    image:  grafana/promtail:latest
+    container_name: promtail
+    restart: always
+    volumes:
+      - /var/log:/var/log/promtail
+      - ./config/promtail-config.yaml:/etc/promtail/promtail-config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - config.expand-env=true
+      - config.file=/etc/promtail/promtail-config.yaml
+    networks:
+      uniclient-network:
+        ipv4_address: 192.176.0.18
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.44.0
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
+    restart: unless-stopped
+    ports:
+      - "8080:8080"

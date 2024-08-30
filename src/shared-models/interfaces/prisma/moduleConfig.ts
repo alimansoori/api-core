@@ -1,0 +1,48 @@
+export const MODULE_CONFIG_KEY = {
+  stripe: {
+    stripe_cus_id: 'stripe_cus_id',
+    stripe_sub_id: 'stripe_sub_id',
+    refresh_token: 'refresh_token',
+    user_id: 'user_id',
+  },
+  outlook_calendar: {
+    id: 'id',
+    email: 'email',
+    refresh_token: 'refresh_token',
+  },
+  google_calendar: {
+    email: 'email',
+    refresh_token: 'refresh_token',
+    calendar_list_watch_id: 'calendar_list_watch_id',
+    calendar_list_resource_id: 'calendar_list_resource_id',
+    calendar_list_sync_token: 'calendar_list_sync_token',
+    calendar_list_failed_at: 'calendar_list_failed_at',
+  },
+  clio: {
+    email: 'email',
+    account_id: 'account_id',
+    access_token: 'access_token',
+    refresh_token: 'refresh_token',
+    contact_sync: 'contact_sync',
+    contact_webhook_id: 'contact_webhook_id',
+    contact_webhook_secret: 'contact_webhook_secret',
+    contact_webhook_expire_at: 'contact_webhook_expire_at',
+    project_sync: 'project_sync',
+    project_webhook_id: 'project_webhook_id',
+    project_webhook_secret: 'project_webhook_secret',
+    project_webhook_expire_at: 'project_webhook_expire_at',
+    meeting_sync: 'meeting_sync',
+    meeting_webhook_id: 'meeting_webhook_id',
+    meeting_webhook_secret: 'meeting_webhook_secret',
+    meeting_webhook_expire_at: 'meeting_webhook_expire_at',
+  },
+  google_contacts: {
+    email: 'email',
+    refresh_token: 'refresh_token',
+  },
+  clickup: {
+    access_token: 'access_token',
+    user_id: 'user_id',
+    email: 'email',
+  },
+} as const
