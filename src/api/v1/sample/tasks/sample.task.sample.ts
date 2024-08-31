@@ -12,5 +12,6 @@ const task = new AsyncTask(
 
 const interval = { seconds: 3 };
 
+
 export default { task, interval };
  */
