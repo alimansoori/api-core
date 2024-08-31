@@ -1,10 +1,10 @@
 import { FastifyPluginCallback } from "fastify";
 import { container } from 'tsyringe';
-import { IRootApi, IRootApiSchema } from "./schemas/root.schema";
-import RootService from "./services/root.service";
+import { IRootApi, IRootApiSchema } from "./schemas/sample.schema";
+import SampleService from "./services/sample.service";
 
 export const rootController: FastifyPluginCallback = (fastify, opts, done) => {
-    const service = container.resolve(RootService)
+    const service = container.resolve(SampleService)
 
     fastify.get<IRootApi['fastify']>(
         '/',

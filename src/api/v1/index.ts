@@ -23,7 +23,7 @@ export const V1Router: FastifyPluginCallback = async (fastify, options, done) =>
       const controller = controllerModule[`${module}Controller`];
 
       if (controller) {
-        fastify.register(controller, { prefix: `/${module !== 'root' ? module : '' }` });
+        fastify.register(controller, { prefix: `/${module !== 'root' ? module : ''}` });
       }
     } catch (err) {
       console.error(`Failed to load controller for module: ${module}`, err);
